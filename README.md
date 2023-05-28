@@ -2,11 +2,10 @@ Work in progress - library not ready for use.
 
 # zod-expo-notifications
 
+Easily create typesafe notification handlers using zod.
+
 ![Screenshot 2023-05-28 at 4 02 39 PM](https://github.com/iway1/zod-expo-notifications/assets/12774588/13220c24-b251-4259-846f-4dd4268d2d32)
 ![Screenshot 2023-05-28 at 4 02 58 PM](https://github.com/iway1/zod-expo-notifications/assets/12774588/5e89ad85-df4f-4762-bfea-9f959846615f)
-
-
-Easily create typesafe notification handlers using zod.
 
 - 🧙 Runtime and compile time typesafety using zod with minimal overhead
 - 🌯 Thin wrapper around `expo-notifications` to prevent boilerplate (you might not need to use `expo-notifications` directly
