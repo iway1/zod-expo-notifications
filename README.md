@@ -1,21 +1,55 @@
+Work in progress - library not ready for use.
+
 # zod-expo-notifications
 
-Easily build typesafe notification handlers
+Easily create typesafe notification handlers using zod.
+
+- 🧙 Runtime and compile time typesafety using zod with minimal overhead
+- 🌯 Thin wrapper around `expo-notifications` to prevent boilerplate (you might not need to use `expo-notifications` directly
+- 👍 Standardize approach to handling push notifications
 
 ## Installation
 
 ```sh
-npm install zod-expo-notifications
+expo install expo-notifications zod-expo-notifications zod
 ```
 
 ## Usage
 
-```js
-import { multiply } from 'zod-expo-notifications';
+First, define your push notifications using `createZodNotificationHandlers()`. 
 
-// ...
+Pass an array of zod objects each with a type property (and optionally a payload):
 
-const result = await multiply(3, 7);
+```tsx
+const { useNotificationReceived, useNotificationResponse } =
+  createZodNotificationHandlers([
+    z.object({
+      type: z.literal('post-liked'),
+      payload: z.object({
+        postId: z.string(),
+      }),
+    }),
+    z.object({
+      type: z.literal('friend-request'),
+      payload: z.object({
+        friendId: z.string(),
+      }),
+    }),
+  ]);
+```
+
+Each object must have a `type` as well as an optional `payload` that will be available in the callback function. Then, in your components use the exported hooks:
+
+```tsx
+import {useNotificationReceived} from '~/push-notifications'
+
+export function MyScreen() {
+  useNotificationReceived('friend-request', (payload)=>{
+    // Typesafe payload is passed to callback
+    payload.friendId; 
+  })
+  // ...
+}
 ```
 
 ## Contributing
