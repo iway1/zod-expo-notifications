@@ -1,3 +1,7 @@
+/**
+ * TODO
+ * - Create global error handler callback
+ */
 import {
   z,
   ZodObject,
@@ -50,17 +54,22 @@ const showedErrorsRef = {
   actionIds: new Set<string>(),
 };
 
-function runCallbackIfMatching({
+function runCallbackIfMatching<
+  Event extends Notifications.Notification | Notifications.NotificationResponse
+>({
   type,
   data,
   callback,
   schema,
   printZodError,
   id,
+  event,
 }: {
-  type: string;
+  // null matches any type.
+  type: string | null;
   data: unknown;
-  callback: (data: unknown) => void;
+  event: Event;
+  callback: (data: unknown, event: Event) => void;
   schema: ZodDiscriminatedUnion<any, any>;
   printZodError: boolean;
   id: string;
@@ -73,14 +82,17 @@ function runCallbackIfMatching({
     }
     return;
   }
-  if (parsed.data.type === type) {
-    callback(parsed.data);
+  if (parsed.data.type === type || type === null) {
+    callback(parsed.data, event);
   }
 }
 
 export type CreateZodNotificationHandlerOptions = {
   showErrors?: boolean;
 };
+
+export type DiscriminatorValuesFromOptions<Options extends DiscUnionOptions> =
+  ReturnType<Options[number]['_def']['shape']>['type']['_def']['value'];
 
 export function createZodNotificationHandlers<Options extends DiscUnionOptions>(
   schema: Options,
@@ -95,14 +107,15 @@ export function createZodNotificationHandlers<Options extends DiscUnionOptions>(
     ...defaultOptions,
     ...options,
   };
-  type DiscriminatorValues = ReturnType<
-    Options[number]['_def']['shape']
-  >['type']['_def']['value'];
+  type DiscriminatorValues = DiscriminatorValuesFromOptions<Options>;
 
   return {
     useNotificationReceived: <Type extends DiscriminatorValues>(
       type: Type,
-      callback: (data: z.infer<FindOption<Type, Options>>['payload']) => void
+      callback: (
+        data: z.infer<FindOption<Type, Options>>['payload'],
+        event: Notifications.Notification
+      ) => void
     ) => {
       const callbackRef = useRef(callback);
       callbackRef.current = callback;
@@ -117,6 +130,7 @@ export function createZodNotificationHandlers<Options extends DiscUnionOptions>(
               schema: union,
               printZodError: !!mergedOptions.showErrors,
               id: event.request.identifier,
+              event,
             });
           }
         );
@@ -125,7 +139,10 @@ export function createZodNotificationHandlers<Options extends DiscUnionOptions>(
     },
     useNotificationResponse: <Type extends DiscriminatorValues>(
       type: Type,
-      callback: (data: z.infer<FindOption<Type, Options>>['payload']) => void
+      callback: (
+        data: z.infer<FindOption<Type, Options>>['payload'],
+        event: Notifications.NotificationResponse
+      ) => void
     ) => {
       const callbackRef = useRef(callback);
       callbackRef.current = callback;
@@ -140,6 +157,7 @@ export function createZodNotificationHandlers<Options extends DiscUnionOptions>(
               schema: union,
               printZodError: !!mergedOptions.showErrors,
               id: event.notification.request.identifier,
+              event,
             });
           }
         );
@@ -148,22 +166,3 @@ export function createZodNotificationHandlers<Options extends DiscUnionOptions>(
     },
   };
 }
-
-const { useNotificationReceived } = createZodNotificationHandlers([
-  z.object({
-    type: z.literal('post-liked'),
-    payload: z.object({
-      postId: z.string(),
-    }),
-  }),
-  z.object({
-    type: z.literal('friend-request'),
-    payload: z.object({
-      friendId: z.string(),
-    }),
-  }),
-]);
-
-useNotificationReceived('post-liked', (data) => {
-  data.postId;
-});
